@@ -10,11 +10,17 @@ SELECT *
 SELECT * 
 	FROM bikeTheft
 	WHERE NeighbourhoodName LIKE '%Humber%'
-	AND Report_Year % 2 != 0
+	AND Occurrence_Year % 2 != 0
+
+-- Or
+SELECT * 
+	FROM bikeTheft
+	WHERE NeighbourhoodName LIKE '%Humber%'
+	AND Occurrence_Year % 2 = 1
 
 -- Question 3
 -- Get the average cost of the bikes recorded in this table. Format this result as a dollar figure, including a dollar sign, rounded to the nearest penny.
-SELECT CONCAT('$', Round(AVG(Cost_of_Bike),1)) AS 'Average cost of the bikes'
+SELECT CONCAT('$', Round(AVG(Cost_of_Bike),2)) AS 'Average cost of the bikes'
 	FROM bikeTheft
 
 -- Question 4
@@ -28,6 +34,11 @@ SELECT COUNT(DISTINCT Bike_Colour, Bike_Speed)
 SELECT Location_Type FROM bikeTheft 
 	GROUP BY Location_Type 
 	HAVING Count(Location_Type) > 500
+
+-- Or 
+SELECT Count(*), Location_type FROM bikeTheft
+	GROUP BY Location_type
+	HAVING Count(*) > 500
 
 -- Question 6
 -- Write a statement that returns the date of the first bike theft contained in this table. (Use an aggregate function for this.)
@@ -52,6 +63,8 @@ SELECT SUM(Cost_of_Bike) / COUNT(*), AVG(Cost_of_Bike) FROM bikeTheft
 -- If they are, explain why. If they are not, explain what you could do to make the result of the AVG() function match the value of the first column.
 -- Answer: Because the COUNT(*) includes the null values while AVG() excludes the null values.
 -- 		   In order to match the value of the first column, we can use COALESCE() to replace all null values with zero first before running the AVG function
+
+-- SELECT SUM(Cost_of_Bike) / COUNT(Cost_of_Bike), AVG(Cost_of_Bike) FROM bikeTheft
 
 -- Bonus Question
 -- Write a statement that returns the top 5 neighbourhoods in terms of thefts, 

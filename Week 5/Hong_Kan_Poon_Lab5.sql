@@ -16,12 +16,14 @@ SELECT m.first_name, m.last_name, CONCAT(SUBSTR(m.first_name, 1, 1), '.' ,SUBSTR
 	ON w.member_id = m.member_id 
  	WHERE SUBSTR(m.first_name , 1, 1) = 'B'
  	AND SUBSTR(m.last_name , 1, 1) = 'W'
+
+ 	-- m.first_name LIKE 'B%' AND last_name LIKE'W%'
 	
 -- Question 3
 -- Get the number of books written by each American author. Include the first and last names of the author. 
 -- Note that America might be represented in the 'country' column in more than one way - always check your results table to make sure you're getting the expected results.
 
-SELECT a.first_name, a.last_name, a.country, COUNT(*) AS book_count FROM authors a 
+SELECT a.first_name, a.last_name, a.country, COUNT(a2.author_id) AS book_count FROM authors a 
 	LEFT JOIN authorship a2
     ON a.author_id = a2.author_id 
     WHERE a.country IN ('USA','U.S.')

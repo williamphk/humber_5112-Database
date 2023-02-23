@@ -23,6 +23,10 @@ SELECT DISTINCT LOWER(city) from Customer
 SELECT firstName, lastName, SUBSTR(lastName, 3,1) from Customer
     WHERE firstName LIKE '%t%' OR lastName LIKE '%t%'
 
+--Or
+SELECT firstName, lastName, SUBSTR(lastName, 3,1) from Customer
+    WHERE firstName || lastName LIKE '%t%'
+
 -- Question 5
 -- Get all of the rows from the artist table that contain an o with an ülaut ('ö'). In the results table, replace this character with a smiley face (':)')
 SELECT REPLACE(Name, 'ö', ':)') AS 'Name' FROM artist
