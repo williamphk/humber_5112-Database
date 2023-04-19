@@ -1,19 +1,23 @@
+-- Create Line Table
 CREATE TABLE IF NOT EXISTS Line (
     line_id INT AUTO_INCREMENT PRIMARY KEY,
     line_name VARCHAR(255) NOT NULL UNIQUE
 );
 
+-- Insert Data Into Line Table
 INSERT INTO Line (line_name)
 VALUES ('Line 1 - Yonge-University'),
        ('Line 2 - Bloor-Danforth'),
        ('Line 3 - Scarborough'),
        ('Line 4 - Sheppard')
 
+-- Create Stations Table
 CREATE TABLE IF NOT EXISTS Stations (
     station_id INT AUTO_INCREMENT PRIMARY KEY,
     station_name VARCHAR(255) NOT NULL UNIQUE
 );
 
+-- Insert Data Into Stations Table
 INSERT INTO Stations (station_name)
 VALUES ('Sheppard-Yonge'),
        ('Bayview'),
@@ -21,6 +25,7 @@ VALUES ('Sheppard-Yonge'),
        ('Leslie'),
        ('Don Mills');
 
+-- Create Line_Stations Table
 CREATE TABLE IF NOT EXISTS Line_Stations (
     lines_stations_id INT AUTO_INCREMENT PRIMARY KEY,
     line_id INT,
@@ -29,6 +34,7 @@ CREATE TABLE IF NOT EXISTS Line_Stations (
     FOREIGN KEY (station_id) REFERENCES Stations(station_id) ON DELETE CASCADE
 );
 
+-- Insert Data Into Line_Stations Table
 INSERT INTO Line_Stations (line_id, station_id)
 VALUES (4, 1),
        (4, 2),
@@ -36,6 +42,7 @@ VALUES (4, 1),
        (4, 4),
        (4, 5);
 
+-- Create Trains Table
 CREATE TABLE IF NOT EXISTS Trains (
     train_id INT AUTO_INCREMENT PRIMARY KEY,
     train_name VARCHAR(255) NOT NULL UNIQUE,
@@ -43,26 +50,29 @@ CREATE TABLE IF NOT EXISTS Trains (
     FOREIGN KEY (line_id) REFERENCES Line(line_id) ON DELETE CASCADE
 );
 
+-- Insert Data Into Trains Table
 INSERT INTO Trains (train_name, line_id)
 VALUES ('Train 401', 4),
        ('Train 402', 4),
        ('Train 403', 4),
        ('Train 404', 4);
 
+-- Create Schedules Table
 CREATE TABLE IF NOT EXISTS Schedules (
     schedule_id INT AUTO_INCREMENT PRIMARY KEY,
     line_id INT,
     station_id INT,
     train_id INT,
     direction VARCHAR(255),
-    arriving_time TIME NOT NULL,
+    arrival_time TIME NOT NULL,
     delay TIME,
     FOREIGN KEY (line_id) REFERENCES Line(line_id) ON DELETE CASCADE,
     FOREIGN KEY (station_id) REFERENCES Stations(station_id) ON DELETE CASCADE,
     FOREIGN KEY (train_id) REFERENCES Trains(train_id) ON DELETE CASCADE
 );
 
-INSERT INTO Schedules (line_id, station_id, train_id, direction, arriving_time, delay)
+-- Insert Data Into Trains Table Manually
+INSERT INTO Schedules (line_id, station_id, train_id, direction, arrival_time, delay)
 VALUES 
 -- Train 401
 -- Sheppard-Yonge to Don Mills
@@ -213,54 +223,9 @@ VALUES
        (4, 4, 4, 'Westbound', '08:55:00', '00:00:00'),
        (4, 5, 4, 'Westbound', '09:00:00', '00:00:00');
 
-SELECT *
-  FROM Schedules s
-  JOIN Line l ON s.line_id = l.line_id
-  JOIN Stations st ON s.station_id = st.station_id
-  JOIN Trains t ON s.train_id = t.train_id
-  WHERE s.line_id = 4 AND t.train_id = 3
-  ORDER BY s.schedule_id;
 
--- show the next three trains vs current time, station, line
-CREATE VIEW next_three_schedules_Bessarion_Eastbound AS
-  SELECT
-      l.line_name,
-      st.station_name,
-      t.train_name,
-      s.arriving_time,
-      SEC_TO_TIME(TIME_TO_SEC(s.arriving_time) + TIME_TO_SEC(s.delay)) AS actual_arriving_time,
-      s.direction
-  FROM Schedules s
-    JOIN Line l ON s.line_id = l.line_id
-    JOIN Stations st ON s.station_id = st.station_id
-    JOIN Trains t ON s.train_id = t.train_id
-  WHERE
-    l.line_id = 4 AND
-    st.station_name = "Sheppard-Yonge" AND 
-      s.arriving_time >= "09:00:00" AND
-      s.direction = "Westbound"
-  ORDER BY
-      s.arriving_time
-  LIMIT 5;
 
-UPDATE Schedules 
-  SET delay = '00:05:00'
-  WHERE schedule_id = 1
-
-DROP TABLE IF EXISTS Schedules;
-CREATE TABLE IF NOT EXISTS Schedules (
-    schedule_id INT AUTO_INCREMENT PRIMARY KEY,
-    line_id INT,
-    station_id INT,
-    train_id INT,
-    direction VARCHAR(255),
-    arriving_time TIME NOT NULL,
-    delay TIME,
-    FOREIGN KEY (line_id) REFERENCES Line(line_id) ON DELETE CASCADE,
-    FOREIGN KEY (station_id) REFERENCES Stations(station_id) ON DELETE CASCADE,
-    FOREIGN KEY (train_id) REFERENCES Trains(train_id) ON DELETE CASCADE
-);
-
+-- Create A Procedure to Insert Train Schedules Automatically With 5 Minutes Time Difference
 DROP PROCEDURE IF EXISTS InsertTrainSchedule;
 DELIMITER //
 CREATE PROCEDURE InsertTrainSchedule(
@@ -286,7 +251,7 @@ BEGIN
           SET var_direction = 'Westbound';       
           SET var_station_id = param_start_station_id;
           WHILE var_station_id < param_end_station_id DO
-              INSERT INTO Schedules (line_id, station_id, train_id, direction, arriving_time, delay)
+              INSERT INTO Schedules (line_id, station_id, train_id, direction, arrival_time, delay)
               VALUES (param_line_id, var_station_id, param_train_id, var_direction, var_current_time, '00:00:00');
               
              -- The time difference between stations is 5 minutes
@@ -301,7 +266,7 @@ BEGIN
           SET var_direction = 'Eastbound';
           SET var_station_id = param_end_station_id;
           WHILE var_station_id > param_start_station_id DO
-              INSERT INTO Schedules (line_id, station_id, train_id, direction, arriving_time, delay)
+              INSERT INTO Schedules (line_id, station_id, train_id, direction, arrival_time, delay)
               VALUES (param_line_id, var_station_id, param_train_id, var_direction, var_current_time, '00:00:00');
               
              -- The time difference between stations is 5 minutes
@@ -322,7 +287,7 @@ BEGIN
           SET var_direction = 'Eastbound';
           SET var_station_id = param_start_station_id;
           WHILE var_station_id > param_end_station_id DO
-              INSERT INTO Schedules (line_id, station_id, train_id, direction, arriving_time, delay)
+              INSERT INTO Schedules (line_id, station_id, train_id, direction, arrival_time, delay)
               VALUES (param_line_id, var_station_id, param_train_id, var_direction, var_current_time, '00:00:00');
               
              -- The time difference between stations is 5 minutes
@@ -338,7 +303,7 @@ BEGIN
           SET var_direction = 'Westbound';
           SET var_station_id = param_end_station_id;
           WHILE var_station_id < param_start_station_id DO
-              INSERT INTO Schedules (line_id, station_id, train_id, direction, arriving_time, delay)
+              INSERT INTO Schedules (line_id, station_id, train_id, direction, arrival_time, delay)
               VALUES (param_line_id, var_station_id, param_train_id, var_direction, var_current_time, '00:00:00');
               
              -- The time difference between stations is 5 minutes
@@ -353,41 +318,44 @@ BEGIN
 END //
 DELIMITER ;
 
+-- Calling The InsertTrainSchedule Procedure To Insert Train Schedules From 6:00am to 10:00pm
+CALL InsertTrainSchedule(4, 1, 1, 5, '06:00:00', '22:00:00');
+CALL InsertTrainSchedule(4, 2, 5, 1, '06:00:00', '22:00:00');
+CALL InsertTrainSchedule(4, 3, 1, 5, '06:15:00', '22:15:00');
+CALL InsertTrainSchedule(4, 4, 5, 1, '06:15:00', '22:15:00');
 
-CALL InsertTrainSchedule(4, 1, 1, 5, '09:00:00', '22:00:00');
-CALL InsertTrainSchedule(4, 2, 5, 1, '09:00:00', '22:00:00');
-CALL InsertTrainSchedule(4, 3, 1, 5, '09:15:00', '22:15:00');
-CALL InsertTrainSchedule(4, 4, 5, 1, '09:15:00', '22:15:00');
-
+-- Create A Trigger to Detect Time Conflict of Train Schedules
 DELIMITER //
-CREATE TRIGGER check_arriving_time_update
+CREATE TRIGGER check_arrival_time_update
 BEFORE UPDATE ON Schedules
 FOR EACH ROW
 BEGIN
-  DECLARE next_arriving_time TIME;
+  DECLARE next_arrival_time TIME;
   
-  SELECT arriving_time
-  INTO next_arriving_time
+  SELECT arrival_time
+  INTO next_arrival_time
   FROM Schedules
   -- I'm not checking the station because the station_id will change along like 1,2,3,4,5 and 5,4,3,2,1 
-    AND line_id = NEW.line_id
+    WHERE line_id = NEW.line_id
     AND train_id = NEW.train_id
-    AND arriving_time > OLD.arriving_time
-  ORDER BY arriving_time ASC
+    AND arrival_time > OLD.arrival_time
+  ORDER BY arrival_time ASC
   LIMIT 1;
-  
-  IF NEW.arriving_time >= next_arriving_time THEN
+  -- If the new arrival is greater or equal to the next arrival time, throws an error
+  IF NEW.arrival_time >= next_arrival_time THEN
     SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = 'Error: Updated arriving time cannot be later than or equal to the arriving time of the next train.';
+    SET MESSAGE_TEXT = 'Error: Updated arrival time cannot be later than or equal to the arrival time of the next train.';
   END IF;
 END;
 //
 DELIMITER ;
 
+-- To Test The check_arrival_time_update Trigger
 UPDATE Schedules 
-  SET arriving_time = '09:04:59'
+  SET arrival_time = '09:05:00'
   WHERE schedule_id = 1
 
+-- Create A Schedules_log Table
 DROP TABLE IF EXISTS Schedules_log;
 CREATE TABLE IF NOT EXISTS Schedules_log (
     log_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -397,11 +365,12 @@ CREATE TABLE IF NOT EXISTS Schedules_log (
     station_id INT,
     train_id INT,
     direction VARCHAR(255),
-    arriving_time_new TIME,
-    arriving_time_old TIME,
+    arrival_time_new TIME,
+    arrival_time_old TIME,
     timestamp TIMESTAMP
 );  
-  
+
+-- Create Trigger To Log When Deleting A Schedule
 DELIMITER //
 CREATE TRIGGER log_schedule_deletion
   AFTER DELETE ON Schedules
@@ -414,7 +383,7 @@ CREATE TRIGGER log_schedule_deletion
       station_id,
       train_id,
       direction,
-      arriving_time_old,
+      arrival_time_old,
       timestamp
     )
     VALUES (
@@ -424,72 +393,22 @@ CREATE TRIGGER log_schedule_deletion
       OLD.station_id,
       OLD.train_id,
       OLD.direction,
-      OLD.arriving_time,
+      OLD.arrival_time,
       NOW()
     );
   END; //
 DELIMITER ;
 
+-- Testing the log_schedule_deletion Trigger
 DELETE FROM Schedules 
   WHERE schedule_id = 1;
 
-DROP PROCEDURE IF EXISTS CalculateTravelTime;
+-- Create Function To Return The Updated Arrival Time After Delay For A Train
+DROP FUNCTION IF EXISTS UpdateArrivalTimeWithDelay;
 DELIMITER //
-CREATE PROCEDURE CalculateTravelTime(
-  IN param_line_id INT,
-  IN param_origin_station_id INT,
-  IN param_destination_station_id INT,
-  OUT param_travel_time TIME
-)
-BEGIN
-  DECLARE var_origin_arriving_time TIME;
-  DECLARE var_destination_arriving_time TIME;
-
-  -- Get the arriving time of the first train at the origin station
-  SELECT
-    MIN(arriving_time)
-  INTO var_origin_arriving_time
-  FROM
-    Schedules
-  WHERE
-    line_id = param_line_id AND
-        train_id = 1 AND
-    station_id = param_origin_station_id;
-
-  -- Get the arriving time of the next train after the origin station train at the destination station
-  SELECT
-    MIN(arriving_time)
-  INTO var_destination_arriving_time
-  FROM
-    Schedules
-  WHERE
-    line_id = param_line_id AND
-    station_id = param_destination_station_id AND
-    train_id = 1 AND
-    arriving_time > var_origin_arriving_time;
-
-  -- Calculate the travel time
-  SET param_travel_time = TIMEDIFF(var_destination_arriving_time, var_origin_arriving_time);
-END;
-//
-DELIMITER ;
-
-CALL CalculateTravelTime(4, 1, 5, @travel_time);
-SELECT @travel_time;
-
-UPDATE Schedules 
-	SET delay = '00:04:59'
-	WHERE schedule_id = 1
-	
-  SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(delay)))
-  FROM Schedules
-  WHERE train_id = 1;
-
-DROP FUNCTION IF EXISTS UpdateArrivingTimeWithDelay;
-DELIMITER //
-CREATE FUNCTION UpdateArrivingTimeWithDelay(
+CREATE FUNCTION UpdateArrivalTimeWithDelay(
   param_train_id INT,
-  original_arriving_time TIME
+  original_arrival_time TIME
 ) RETURNS TIME
 BEGIN
   DECLARE total_delay_seconds INT;
@@ -500,15 +419,40 @@ BEGIN
   FROM Schedules
   WHERE train_id = param_train_id;
 
-  -- If there is no delay or the total delay is 0, return the original arriving time
+  -- If there is no delay or the total delay is 0, return the original arrival time
   IF total_delay_seconds IS NULL OR total_delay_seconds = 0 THEN
-    RETURN original_arriving_time;
+    RETURN original_arrival_time;
   END IF;
 
-  -- Calculate the new arriving time after applying the total delay
-  RETURN ADDTIME(original_arriving_time, SEC_TO_TIME(total_delay_seconds));
+  -- Calculate the new arrival time after applying the total delay
+  RETURN ADDTIME(original_arrival_time, SEC_TO_TIME(total_delay_seconds));
 END;
 //
 DELIMITER ;
 
-SELECT UpdateArrivingTimeWithDelay(1, '09:00:00');
+-- Set A Delay to Train 401
+UPDATE Schedules 
+	SET delay = '00:00:30'
+	WHERE schedule_id = 2
+
+-- Show The Next Five Train Schedules At Bayview Station To Eastbound FROM 9:00AM 
+CREATE VIEW next_five_schedules_Bessarion_Eastbound AS
+  SELECT
+      l.line_name,
+      st.station_name,
+      t.train_name,
+      s.arrival_time,
+      UpdateArrivalTimeWithDelay(s.train_id, s.arrival_time) AS updated_arrival_time,
+      s.direction
+  FROM Schedules s
+    JOIN Line l ON s.line_id = l.line_id
+    JOIN Stations st ON s.station_id = st.station_id
+    JOIN Trains t ON s.train_id = t.train_id
+  WHERE
+    l.line_id = 4 AND
+    st.station_name = "Bayview" AND 
+      s.arrival_time >= "06:00:00" AND
+      s.direction = "Eastbound"
+  ORDER BY
+      s.arrival_time
+  LIMIT 5;
